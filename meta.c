@@ -100,7 +100,7 @@ int hub_unlink(const char *path)
     char bpath[PATH_MAX];
 
     snprintf(bpath, sizeof(bpath), "%s%s", fs->root, path);
-    if (unlink(path) < 0) {
+    if (unlink(bpath) < 0) {
         return -errno;
     }
     return 0;
@@ -306,6 +306,8 @@ int hub_readdir(const char *path __attribute__((unused)), void *buf,
              ((de->d_name[1] == '.') && (de->d_name[2] == '\0')))) {
             continue;
         }
+        // We're using the directory filler API here.  This avoids the need to
+        // fetch all the directory entries at once.
         // TODO: can we avoid calling telldir for every entry in the directory?
         offset = telldir(dp);
         if (filler(buf, de->d_name, NULL, offset)) {
