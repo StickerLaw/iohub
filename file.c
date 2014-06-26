@@ -33,6 +33,8 @@
 #include <sys/xattr.h>
 #include <unistd.h>
 
+static void print_open_flags(int flags) __attribute__((unused));
+
 struct hub_file {
     int fd;
 };
@@ -48,11 +50,66 @@ int hub_fgetattr(const char *path __attribute__((unused)), struct stat *stat,
     return 0;
 }
 
+static void print_open_flags(int flags)
+{
+    if (flags & O_RDONLY) {
+        fprintf(stderr, "O_RDONLY ");
+    }
+    if (flags & O_WRONLY) {
+        fprintf(stderr, "O_WRONLY ");
+    }
+    if (flags & O_RDWR) {
+        fprintf(stderr, "O_RDWR ");
+    }
+    if (flags & O_CREAT) {
+        fprintf(stderr, "O_CREAT ");
+    }
+    if (flags & O_EXCL) {
+        fprintf(stderr, "O_EXCL ");
+    }
+    if (flags & O_NOCTTY) {
+        fprintf(stderr, "O_NOCTTY ");
+    }
+    if (flags & O_TRUNC) {
+        fprintf(stderr, "O_TRUNC ");
+    }
+    if (flags & O_APPEND) {
+        fprintf(stderr, "O_APPEND ");
+    }
+    if (flags & O_NONBLOCK) {
+        fprintf(stderr, "O_NONBLOCK ");
+    }
+    if (flags & O_DSYNC) {
+        fprintf(stderr, "O_DSYNC ");
+    }
+    if (flags & FASYNC) {
+        fprintf(stderr, "FASYNC ");
+    }
+    if (flags & O_DIRECT) {
+        fprintf(stderr, "O_DIRECT ");
+    }
+    if (flags & O_LARGEFILE) {
+        fprintf(stderr, "O_LARGEFILE ");
+    }
+    if (flags & O_DIRECTORY) {
+        fprintf(stderr, "O_DIRECTORY");
+    }
+    if (flags & O_NOFOLLOW) {
+        fprintf(stderr, "O_NOFOLLOW");
+    }
+    if (flags & O_NOATIME) {
+        fprintf(stderr, "O_NOATIME");
+    }
+    if (flags & O_CLOEXEC) {
+        fprintf(stderr, "O_CLOEXEC");
+    }
+}
+
 static int hub_open_impl(const char *path, int addflags,
             mode_t mode, struct fuse_file_info *info)
 {
     struct hub_fs *fs = fuse_get_context()->private_data;
-    int flags = 0, ret = 0, fd = -1;
+    int flags = 0, ret = 0;
     char bpath[PATH_MAX];
     struct hub_file *file = NULL;
 
@@ -61,12 +118,19 @@ static int hub_open_impl(const char *path, int addflags,
         ret = -ENOMEM;
         goto error;
     }
+    file->fd = -1;
     snprintf(bpath, sizeof(bpath), "%s%s", fs->root, path);
     // note: we assume that FUSE has already taken care of umask.
     flags = addflags;
     flags |= info->flags;
-    fd = open(bpath, flags, mode);
-    if (fd < 0) {
+    if ((flags & O_ACCMODE) == 0)  {
+        flags |= O_RDONLY;
+    }
+//    fprintf(stderr, "open(bpath=%s, flags=", bpath);
+//    print_open_flags(flags);
+//    fprintf(stderr, ", mode=0%04o)\n", mode);
+    file->fd = open(bpath, flags, mode);
+    if (file->fd < 0) {
         ret = -errno;
         goto error;
     }
