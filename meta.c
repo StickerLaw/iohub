@@ -288,20 +288,17 @@ int hub_readdir(const char *path __attribute__((unused)), void *buf,
     struct dirent *de;
 
     errno = 0;
-    fprintf(stderr, "WATERMELON: calling readdir on %p\n", dp);
     if (offset != 0) {
         seekdir(dp, (long)offset);
     }
     while (1) {
         de = readdir(dp); // portability: thread-safe on Linux, maybe not elsewhere
         if (!de) {
-            fprintf(stderr, "WATERMELON: got !de on %p\n", dp);
             if (errno) {
                 return -errno;
             }
             return 0;
         }
-        fprintf(stderr, "WATERMELON: calling got %s on %p\n", de->d_name, dp);
         if ((de->d_name[0] == '.') && ((de->d_name[1] == '\0') ||
              ((de->d_name[1] == '.') && (de->d_name[2] == '\0')))) {
             continue;
