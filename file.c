@@ -18,6 +18,7 @@
 
 #include "file.h"
 #include "fs.h"
+#include "throttle.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -33,11 +34,11 @@
 #include <sys/xattr.h>
 #include <unistd.h>
 
-static void print_open_flags(int flags) __attribute__((unused));
-
 struct hub_file {
     int fd;
 };
+
+static void print_open_flags(int flags) __attribute__((unused));
 
 int hub_fgetattr(const char *path __attribute__((unused)), struct stat *stat,
                         struct fuse_file_info *info)
@@ -164,6 +165,7 @@ int hub_read(const char *path __attribute__((unused)), char *buf,
     int ret;
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
 
+    throttle(fuse_get_context()->uid, size);
     ret = pread(file->fd, buf, size, offset);
     if (ret < 0) {
         return -errno;
@@ -179,6 +181,8 @@ int hub_write(const char *path __attribute__((unused)), const char *buf,
     int ret;
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
 
+    //fprintf(stderr, "size = %zd\n", size);
+    throttle(fuse_get_context()->uid, size);
     ret = pwrite(file->fd, buf, size, offset);
     if (ret < 0) {
         return -errno;

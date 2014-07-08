@@ -19,6 +19,7 @@
 #include "file.h"
 #include "fs.h"
 #include "meta.h"
+#include "throttle.h"
 #include "util.h"
 
 #include <ctype.h>
@@ -149,6 +150,24 @@ error:
     return ret;
 }
 
+static const struct uid_config woot = {
+    .next = NULL,
+    .uid = 1015,
+    .full = 5242880LL,
+};
+
+static const struct uid_config cmccabe = {
+    .next = &woot,
+    .uid = 1014,
+    .full = 262144000LL,
+};
+
+static const struct uid_config uid_config_list = {
+    .next = &cmccabe,
+    .uid = UNKNOWN_UID,
+    .full = 5242880LL,
+};
+
 int main(int argc, char *argv[])
 {
     int ret = EXIT_FAILURE;
@@ -156,6 +175,8 @@ int main(int argc, char *argv[])
     struct fuse_args args;
 
     memset(&args, 0, sizeof(args));
+
+    throttle_init(&uid_config_list);
 
     if (chdir("/") < 0) {
         perror("hub_main: failed to change directory to /");

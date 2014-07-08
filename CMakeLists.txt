@@ -45,7 +45,9 @@ ENDIF(FUSE_FOUND)
 add_executable(iohub
     file.c
     fs.c
+    htable.c
     meta.c
+    throttle.c
     util.c
 )
 target_link_libraries(iohub
