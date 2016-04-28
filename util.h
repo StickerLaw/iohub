@@ -52,6 +52,16 @@ int snappend(char *str, size_t str_len, const char *fmt, ...)
  */
 int open_flags_to_str(int flags, char *str, size_t max_len);
 
+/**
+ * Recursively unlink a path.
+ * Symlinks will be followed.
+ *
+ * @param path      the path to unlink
+ *
+ * @return          0 on success; negative error code otherwise
+ */
+int recursive_unlink(const char *name);
+
 #endif
 
 // vim: ts=4:sw=4:et

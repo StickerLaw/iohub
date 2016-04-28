@@ -73,6 +73,7 @@ add_library(utest
 target_link_libraries(utest pthread)
 
 add_executable(util_unit
+    log.c
     util_unit.c 
     util.c
     test.c

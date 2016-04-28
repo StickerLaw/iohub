@@ -16,8 +16,10 @@
  * limitations under the License.
  */
 
+#include "log.h"
 #include "util.h"
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
@@ -161,6 +163,67 @@ int open_flags_to_str(int flags, char *str, size_t max_len)
         prefix = "|";
     }
     return 0;
+}
+
+static int recursive_unlink_helper(int dirfd, const char *name)
+{
+    int fd = -1, ret = 0;
+    DIR *dfd = NULL;
+    struct stat stat;
+    struct dirent *de;
+
+    if (dirfd >= 0) {
+        fd = openat(dirfd, name, O_RDONLY);
+    } else {
+        fd = open(name, O_RDONLY);
+    }
+    if (fd < 0) {
+        ret = errno;
+        fprintf(stderr, "error opening %s: %s\n", name, terror(ret));
+        goto done;
+    }
+    if (fstat(fd, &stat) < 0) {
+        ret = errno;
+        fprintf(stderr, "failed to stat %s: %s\n", name, terror(ret));
+        goto done;
+    }
+    if (!(S_ISDIR(stat.st_mode))) {
+        if (unlinkat(dirfd, name, 0)) {
+            ret = errno;
+            fprintf(stderr, "failed to unlink %s: %s\n", name, terror(ret));
+            goto done;
+        }
+    } else {
+        dfd = fdopendir(fd);
+        if (!dfd) {
+            ret = errno;
+            fprintf(stderr, "fopendir(%s) failed: %s\n", name, terror(ret));
+            goto done;
+        }
+        while ((de = readdir(dfd))) {
+            if (strcmp(de->d_name, "."))
+                continue;
+            if (strcmp(de->d_name, ".."))
+                continue;
+            ret = recursive_unlink_helper(fd, de->d_name);
+            if (ret) {
+                goto done;
+            }
+        }
+    }
+done:
+    if (fd >= 0) {
+        close(fd);
+    }
+    if (dfd) {
+        closedir(dfd);
+    }
+    return -ret;
+}
+
+int recursive_unlink(const char *name)
+{
+    return recursive_unlink_helper(-1, name);
 }
 
 // vim: ts=4:sw=4:tw=79:et
