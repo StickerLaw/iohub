@@ -60,7 +60,7 @@ int do_touch2(const char *dir, const char *fname);
         if (__my_ret__) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return __my_ret__; \
+            return -1; \
         } \
     } while (0);
 
@@ -100,7 +100,7 @@ int do_touch2(const char *dir, const char *fname);
         if (__my_ret__ < 0) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return __my_ret__; \
+            return -1; \
         } \
     } while (0);
 
@@ -109,7 +109,7 @@ int do_touch2(const char *dir, const char *fname);
         if (x != y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                     __LINE__, #x); \
-            return 1; \
+            return -1; \
         } \
     } while (0);
 
@@ -118,7 +118,7 @@ int do_touch2(const char *dir, const char *fname);
         if (x == y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                     __LINE__, #x); \
-            return 1; \
+            return -1; \
         } \
     } while (0);
 
@@ -127,7 +127,7 @@ int do_touch2(const char *dir, const char *fname);
         if (x >= y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return 1; \
+            return -1; \
         } \
     } while (0);
 
@@ -136,7 +136,7 @@ int do_touch2(const char *dir, const char *fname);
         if (x < y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return 1; \
+            return -1; \
         } \
     } while (0);
 
@@ -145,7 +145,35 @@ int do_touch2(const char *dir, const char *fname);
         if (x <= y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return 1; \
+            return -1; \
+        } \
+    } while (0);
+
+#define EXPECT_POSIX_SUCC(expr) \
+    do { \
+        if (expr) { \
+            int err = errno; \
+            fprintf(stderr, "error %d (%s) on line %d: %s\n", \
+                err, terror(err), __LINE__, #expr); \
+            return -1; \
+        } \
+    } while (0);
+
+
+#define EXPECT_POSIX_FAIL(expr, eret) \
+    do { \
+        int err; \
+        \
+        if (expr == 0) { \
+            fprintf(stderr, "unexpected success on line %d: %s\n",\
+                __LINE__, #expr); \
+            return -1; \
+        } \
+        err = errno; \
+        if (err != eret) { \
+            fprintf(stderr, "unexpected error %d (%s) on line %d: %s\n",\
+                err, terror(err), __LINE__, #expr); \
+            return -1; \
         } \
     } while (0);
 

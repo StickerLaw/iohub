@@ -172,11 +172,7 @@ static int recursive_unlink_helper(int dirfd, const char *name)
     struct stat stat;
     struct dirent *de;
 
-    if (dirfd >= 0) {
-        fd = openat(dirfd, name, O_RDONLY);
-    } else {
-        fd = open(name, O_RDONLY);
-    }
+    fd = openat(dirfd, name, O_RDONLY);
     if (fd < 0) {
         ret = errno;
         fprintf(stderr, "error opening %s: %s\n", name, terror(ret));
@@ -201,14 +197,29 @@ static int recursive_unlink_helper(int dirfd, const char *name)
             goto done;
         }
         while ((de = readdir(dfd))) {
-            if (strcmp(de->d_name, "."))
+            if ((de->d_name[0] ==  '.') && (de->d_name[1] == '\0')) {
                 continue;
-            if (strcmp(de->d_name, ".."))
+            }
+            if ((de->d_name[0] ==  '.') && (de->d_name[1] == '.') &&
+                    (de->d_name[2] == '\0')) {
                 continue;
+            }
             ret = recursive_unlink_helper(fd, de->d_name);
             if (ret) {
                 goto done;
             }
+        }
+        if (closedir(dfd) < 0) {
+            ret = errno;
+            fprintf(stderr, "closedir(%s) failed: %s\n", name, terror(ret));
+            goto done;
+        }
+        dfd = NULL;
+        if (unlinkat(dirfd, name, AT_REMOVEDIR)) {
+            ret = errno;
+            fprintf(stderr, "failed to unlink directory %s: %s\n",
+                    name, terror(ret));
+            goto done;
         }
     }
 done:
@@ -223,7 +234,7 @@ done:
 
 int recursive_unlink(const char *name)
 {
-    return recursive_unlink_helper(-1, name);
+    return recursive_unlink_helper(AT_FDCWD, name);
 }
 
 // vim: ts=4:sw=4:tw=79:et
