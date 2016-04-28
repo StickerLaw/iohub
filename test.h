@@ -54,7 +54,7 @@ int do_touch1(const char *fname);
  */
 int do_touch2(const char *dir, const char *fname);
 
-#define EXPECT_ZERO(x) \
+#define EXPECT_INT_ZERO(x) \
     do { \
         int __my_ret__ = x; \
         if (__my_ret__) { \
@@ -64,7 +64,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_NONZERO(x) \
+#define EXPECT_INT_NONZERO(x) \
     do { \
         int __my_ret__ = x; \
         if (__my_ret__ == 0) { \
@@ -74,7 +74,27 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_POSITIVE(x) \
+#define EXPECT_NULL(x) \
+    do { \
+        void *__my_ret__ = x; \
+        if (__my_ret__) { \
+            fprintf(stderr, "failed on line %d: %s\n",\
+                __LINE__, #x); \
+            return -1; \
+        } \
+    } while (0);
+
+#define EXPECT_NONNULL(x) \
+    do { \
+        void *__my_ret__ = x; \
+        if (!__my_ret__) { \
+            fprintf(stderr, "failed on line %d: %s\n",\
+                __LINE__, #x); \
+            return -1; \
+        } \
+    } while (0);
+
+#define EXPECT_INT_POSITIVE(x) \
     do { \
         int __my_ret__ = x; \
         if (__my_ret__ < 0) { \
@@ -84,7 +104,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_EQUAL(x, y) \
+#define EXPECT_INT_EQ(x, y) \
     do { \
         if (x != y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
@@ -93,7 +113,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_NOT_EQUAL(x, y) \
+#define EXPECT_INT_NE(x, y) \
     do { \
         if (x == y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
@@ -102,7 +122,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_LT(x, y) \
+#define EXPECT_INT_LT(x, y) \
     do { \
         if (x >= y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
@@ -111,7 +131,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_GE(x, y) \
+#define EXPECT_INT_GE(x, y) \
     do { \
         if (x < y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
@@ -120,20 +140,11 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_GT(x, y) \
+#define EXPECT_INT_GT(x, y) \
     do { \
         if (x <= y) { \
             fprintf(stderr, "failed on line %d: %s\n",\
                 __LINE__, #x); \
-            return 1; \
-        } \
-    } while (0);
-
-#define EXPECT_NOT_ERRPTR(p) \
-    do { \
-        if (IS_ERR(p)) { \
-            fprintf(stderr, "failed on line %d: %p\n",\
-                __LINE__, #p); \
             return 1; \
         } \
     } while (0);

@@ -36,25 +36,25 @@ static int test_snappend(void)
     memset(canary, 0, sizeof(canary));
     memset(all_zero, 0, sizeof(all_zero));
     snappend(buf, sizeof(buf), "abracadabrafoomanchucalifrag");
-    EXPECT_ZERO(strcmp(buf, "abracadabrafoom"));
-    EXPECT_ZERO(memcmp(canary, all_zero, sizeof(canary)));
+    EXPECT_INT_ZERO(strcmp(buf, "abracadabrafoom"));
+    EXPECT_INT_ZERO(memcmp(canary, all_zero, sizeof(canary)));
     snappend(buf, sizeof(buf), "other stuff");
-    EXPECT_ZERO(strcmp(buf, "abracadabrafoom"));
-    EXPECT_ZERO(memcmp(canary, all_zero, sizeof(canary)));
+    EXPECT_INT_ZERO(strcmp(buf, "abracadabrafoom"));
+    EXPECT_INT_ZERO(memcmp(canary, all_zero, sizeof(canary)));
     memset(buf, 0, sizeof(buf));
     snappend(buf, sizeof(buf), "%d", 123);
-    EXPECT_ZERO(strcmp(buf, "123"));
+    EXPECT_INT_ZERO(strcmp(buf, "123"));
     snappend(buf, sizeof(buf), "456");
-    EXPECT_ZERO(strcmp(buf, "123456"));
+    EXPECT_INT_ZERO(strcmp(buf, "123456"));
     snappend(buf, sizeof(buf), "789");
-    EXPECT_ZERO(strcmp(buf, "123456789"));
+    EXPECT_INT_ZERO(strcmp(buf, "123456789"));
 
     return 0;
 }
 
 int main(void)
 {
-    EXPECT_ZERO(test_snappend());
+    EXPECT_INT_ZERO(test_snappend());
 
     return EXIT_SUCCESS;
 }

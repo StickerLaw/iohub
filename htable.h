@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 
-#ifndef HADOOP_CORE_COMMON_HASH_TABLE
-#define HADOOP_CORE_COMMON_HASH_TABLE
+#ifndef IOHUB_HASH_TABLE_H
+#define IOHUB_HASH_TABLE_H
 
 #include <inttypes.h>
 #include <stdio.h>

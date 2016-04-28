@@ -79,3 +79,11 @@ add_executable(util_unit
 )
 target_link_libraries(util_unit utest)
 add_utest(util_unit)
+
+add_executable(htable_unit
+    htable_unit.c 
+    htable.c
+    test.c
+)
+target_link_libraries(htable_unit utest)
+add_utest(htable_unit)
