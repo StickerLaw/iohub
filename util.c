@@ -55,7 +55,6 @@ int snappend(char *str, size_t str_len, const char *fmt, ...)
 
 int open_flags_to_str(int flags, char *str, size_t max_len)
 {
-    size_t rem = max_len;
     const char *prefix = "";
 
     // TODO: optimize this a bit

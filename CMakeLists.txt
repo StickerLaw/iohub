@@ -23,6 +23,11 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_REENTRANT -D_GNU_SOURCE")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DFUSE_USE_VERSION=26")
 
+enable_testing()
+
+# Define "make check" as an alias for "make test."
+add_custom_target(check COMMAND ctest)
+
 function(FLATTEN_LIST INPUT SEPARATOR OUTPUT)
     string (REPLACE ";" "${SEPARATOR}" _TMPS "${INPUT}")
     set (${OUTPUT} "${_TMPS}" PARENT_SCOPE)
@@ -57,3 +62,20 @@ target_link_libraries(iohub
     pthread
     rt
 )
+
+macro(add_utest utest)
+    add_test(${utest} ${CMAKE_CURRENT_BINARY_DIR}/${utest} ${utest})
+endmacro(add_utest)
+
+add_library(utest
+    test.c
+)
+target_link_libraries(utest pthread)
+
+add_executable(util_unit
+    util_unit.c 
+    util.c
+    test.c
+)
+target_link_libraries(util_unit utest)
+add_utest(util_unit)
