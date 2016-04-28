@@ -20,8 +20,8 @@
 #define IOHUB_FILE_H
 
 #include <fuse.h>
-#include <unistd.h> // for size_t
 #include <sys/types.h> // for mode_t, dev_t
+#include <unistd.h> // for size_t
 
 int hub_fgetattr(const char *path, struct stat *stat,
                         struct fuse_file_info *info);

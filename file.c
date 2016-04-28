@@ -18,7 +18,9 @@
 
 #include "file.h"
 #include "fs.h"
+#include "log.h"
 #include "throttle.h"
+#include "util.h"
 
 #include <ctype.h>
 #include <dirent.h>
@@ -38,72 +40,19 @@ struct hub_file {
     int fd;
 };
 
-static void print_open_flags(int flags) __attribute__((unused));
-
-int hub_fgetattr(const char *path __attribute__((unused)), struct stat *stat,
+int hub_fgetattr(const char *path, struct stat *stat,
                         struct fuse_file_info *info)
 {
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
 
     if (fstat(file->fd, stat) < 0) {
+        int err = errno;
+        DEBUG("hub_fgetattr(path=%s, fd=%d) = %d (%s)\n",
+              path, file->fd, err, terror(err));
         return -errno;
     }
+    DEBUG("hub_fgetattr(path=%s, fd=%d) = 0\n", path, file->fd);
     return 0;
-}
-
-static void print_open_flags(int flags)
-{
-    if (flags & O_RDONLY) {
-        fprintf(stderr, "O_RDONLY ");
-    }
-    if (flags & O_WRONLY) {
-        fprintf(stderr, "O_WRONLY ");
-    }
-    if (flags & O_RDWR) {
-        fprintf(stderr, "O_RDWR ");
-    }
-    if (flags & O_CREAT) {
-        fprintf(stderr, "O_CREAT ");
-    }
-    if (flags & O_EXCL) {
-        fprintf(stderr, "O_EXCL ");
-    }
-    if (flags & O_NOCTTY) {
-        fprintf(stderr, "O_NOCTTY ");
-    }
-    if (flags & O_TRUNC) {
-        fprintf(stderr, "O_TRUNC ");
-    }
-    if (flags & O_APPEND) {
-        fprintf(stderr, "O_APPEND ");
-    }
-    if (flags & O_NONBLOCK) {
-        fprintf(stderr, "O_NONBLOCK ");
-    }
-    if (flags & O_DSYNC) {
-        fprintf(stderr, "O_DSYNC ");
-    }
-    if (flags & FASYNC) {
-        fprintf(stderr, "FASYNC ");
-    }
-    if (flags & O_DIRECT) {
-        fprintf(stderr, "O_DIRECT ");
-    }
-    if (flags & O_LARGEFILE) {
-        fprintf(stderr, "O_LARGEFILE ");
-    }
-    if (flags & O_DIRECTORY) {
-        fprintf(stderr, "O_DIRECTORY");
-    }
-    if (flags & O_NOFOLLOW) {
-        fprintf(stderr, "O_NOFOLLOW");
-    }
-    if (flags & O_NOATIME) {
-        fprintf(stderr, "O_NOATIME");
-    }
-    if (flags & O_CLOEXEC) {
-        fprintf(stderr, "O_CLOEXEC");
-    }
 }
 
 static int hub_open_impl(const char *path, int addflags,
@@ -111,7 +60,7 @@ static int hub_open_impl(const char *path, int addflags,
 {
     struct hub_fs *fs = fuse_get_context()->private_data;
     int flags = 0, ret = 0;
-    char bpath[PATH_MAX];
+    char bpath[PATH_MAX] = { 0 };
     struct hub_file *file = NULL;
 
     file = calloc(1, sizeof(*file));
@@ -127,9 +76,6 @@ static int hub_open_impl(const char *path, int addflags,
     if ((flags & O_ACCMODE) == 0)  {
         flags |= O_RDONLY;
     }
-//    fprintf(stderr, "open(bpath=%s, flags=", bpath);
-//    print_open_flags(flags);
-//    fprintf(stderr, ", mode=0%04o)\n", mode);
     file->fd = open(bpath, flags, mode);
     if (file->fd < 0) {
         ret = -errno;
@@ -139,6 +85,17 @@ static int hub_open_impl(const char *path, int addflags,
     return 0;
 
 error:
+#ifdef DEBUG_ENABLED
+    {
+        char addflags_str[128] = { 0 };
+        char flags_str[128] = { 0 };
+        open_flags_to_str(addflags, addflags_str, sizeof(addflags_str));
+        open_flags_to_str(info->flags, flags_str, sizeof(addflags_str));
+        DEBUG("hub_open_impl(path=%s, bpath=%s, addflags=%s, info->flags=%s, "
+              "mode=%04o) = %d\n", path, bpath, addflags_str, flags_str,
+              mode, ret);
+    }
+#endif
     if (file) {
         if (file->fd >= 0) {
             close(file->fd);
@@ -151,48 +108,64 @@ error:
 int hub_create(const char *path, mode_t mode,
                       struct fuse_file_info *info)
 {
+    DEBUG("hub_create(path=%s, mode=%04o) begin", path, mode);
     return hub_open_impl(path, O_CREAT, mode, info);
 }
 
 int hub_open(const char *path, struct fuse_file_info *info)
 {
+    DEBUG("hub_open(path=%s) begin", path);
     return hub_open_impl(path, 0, 0, info);
 }
 
-int hub_read(const char *path __attribute__((unused)), char *buf,
-             size_t size, off_t offset, struct fuse_file_info *info)
+int hub_read(const char *path, char *buf, size_t size,
+             off_t offset, struct fuse_file_info *info)
 {
     int ret;
+    uint32_t uid;
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
 
-    throttle(fuse_get_context()->uid, size);
+    uid = fuse_get_context()->uid;
+    DEBUG("hub_read(path=%s, size=%zd, offset=%" PRId64", uid=%"PRId32"): "
+          "begin\n", path, size, (int64_t)offset, uid);
+    throttle(uid, size);
     ret = pread(file->fd, buf, size, offset);
-    if (ret < 0) {
-        return -errno;
-    }
     // We're using the direct_io mount option, so we return the number of bytes
-    // read.
+    // read (unless there is an error, in which case we return the negative
+    // error code.) 
+    if (ret < 0) {
+        ret = -errno;
+    }
+    DEBUG("hub_read(path=%s, size=%zd, offset=%" PRId64", uid=%"PRId32") "
+          "= %d\n", path, size, (int64_t)offset, uid, ret);
     return ret;
 }
 
-int hub_write(const char *path __attribute__((unused)), const char *buf,
-              size_t size, off_t offset, struct fuse_file_info *info)
+int hub_write(const char *path, const char *buf, size_t size,
+              off_t offset, struct fuse_file_info *info)
 {
     int ret;
+    uint32_t uid;
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
 
+    uid = fuse_get_context()->uid;
+    DEBUG("hub_write(path=%s, size=%zd, offset=%" PRId64", uid=%"PRId32"): "
+          "throttling...\n", path, size, (int64_t)offset, uid);
     //fprintf(stderr, "size = %zd\n", size);
     throttle(fuse_get_context()->uid, size);
     ret = pwrite(file->fd, buf, size, offset);
-    if (ret < 0) {
-        return -errno;
-    }
     // We're using the direct_io mount option, so we return the number of bytes
-    // written.
+    // written (unless there is an error, in which case we return the negative
+    // error code.)
+    if (ret < 0) {
+        ret = -errno;
+    }
+    DEBUG("hub_write(path=%s, size=%zd, offset=%" PRId64", uid=%"PRId32") "
+          "=  %d\n", path, size, (int64_t)offset, uid, ret);
     return ret;
 }
 
-int hub_flush(const char *path __attribute__((unused)),
+int hub_flush(const char *path,
               struct fuse_file_info *info __attribute__((unused)))
 {
     /*
@@ -204,11 +177,11 @@ int hub_flush(const char *path __attribute__((unused)),
      * We don't do any caching in hubfs, since the kernel already caches for
      * us.  So there is nothing to flush here, and hence nothing to do.
      */
+    DEBUG("hub_flush(path=%s) = 0\n", path);
     return 0;
 }
 
-int hub_release(const char *path __attribute__((unused)),
-                struct fuse_file_info *info)
+int hub_release(const char *path, struct fuse_file_info *info)
 {
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
     int ret = 0;
@@ -224,12 +197,13 @@ int hub_release(const char *path __attribute__((unused)),
         // Linux.
         ret = -errno;
     }
+    file->fd = -1;
+    DEBUG("hub_release(path=%s, file->fd=%d) = %d\n", path, file->fd, ret);
     free(file);
     return ret;
 }
 
-int hub_fsync(const char *path __attribute__((unused)),
-              int datasync, struct fuse_file_info *info)
+int hub_fsync(const char *path, int datasync, struct fuse_file_info *info)
 {
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
     int ret = 0;
@@ -243,29 +217,38 @@ int hub_fsync(const char *path __attribute__((unused)),
             ret = -errno;
         }
     }
+    DEBUG("hub_fsync(path=%s, file->fd=%d, datasync=%d) = %d\n",
+          path, file->fd, datasync, ret);
     return ret;
 }
 
-int hub_ftruncate(const char *path __attribute__((unused)), off_t len,
+int hub_ftruncate(const char *path, off_t len,
                          struct fuse_file_info *info)
 {
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
+    int ret = 0;
 
     if (ftruncate(file->fd, len) < 0) {
-        return -errno;
+        ret = -errno;
     }
-    return 0;
+    DEBUG("hub_ftruncate(path=%s, len=%"PRId64", file->fd=%d) = %d\n",
+          path, (int64_t)len, file->fd, ret);
+    return ret;
 }
 
-int hub_fallocate(const char *path __attribute__((unused)), int mode,
+int hub_fallocate(const char *path, int mode,
                   off_t offset, off_t len, struct fuse_file_info *info)
 {
     struct hub_file *file = (struct hub_file*)(uintptr_t)info->fh;
+    int ret = 0;
 
     if (fallocate(file->fd, mode, offset, len) < 0) {
-        return -errno;
+        ret = -errno;
     }
-    return 0;
+    DEBUG("hub_fallocate(path=%s, mode=%04o, offset=%"PRId64
+          "len=%"PRId64", file->fd=%d) = %d\n", path, mode,
+          (int64_t)offset, (int64_t)len, file->fd, ret);
+    return ret;
 }
 
 // vim: ts=4:sw=4:tw=79:et

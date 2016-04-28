@@ -46,6 +46,7 @@ add_executable(iohub
     file.c
     fs.c
     htable.c
+    log.c
     meta.c
     throttle.c
     util.c

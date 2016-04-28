@@ -19,9 +19,38 @@
 #ifndef IOHUB_UTIL_H
 #define IOHUB_UTIL_H
 
-#include <unistd.h>
+#include <unistd.h> // for size_t
 
+/**
+ * Allocate a new region of memory and zero it, or die.
+ */
 void *xcalloc(size_t nmemb, size_t size);
+
+/**
+ * Like snprintf, but appends to a string that already exists.
+ *
+ * @param str       The string to append to
+ * @param str_len   Maximum length allowed for str
+ * @param fmt       Printf-style format string
+ * @param ...       Printf-style arguments
+ *
+ * @return          0 on success; -ENAMETOOLONG if there was not enough
+ *                      buffer space.
+ */
+int snappend(char *str, size_t str_len, const char *fmt, ...)
+    __attribute__((format(printf, 3, 4)));
+
+/**
+ * Convert a POSIX-open flags integer to a string.
+ *
+ * @param flags     The flags.
+ * @param str       (out paramer) The buffer to write to.
+ * @param max_len   Maximum length of the buffer to write to.
+ *
+ * @return          0 on success; -ENAMETOOLONG if there was not enough
+ *                      buffer space.
+ */
+int open_flags_to_str(int flags, char *str, size_t max_len);
 
 #endif
 
