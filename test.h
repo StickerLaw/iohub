@@ -94,7 +94,7 @@ int do_touch2(const char *dir, const char *fname);
         } \
     } while (0);
 
-#define EXPECT_INT_POSITIVE(x) \
+#define EXPECT_INT_NONNEGATIVE(x) \
     do { \
         int __my_ret__ = x; \
         if (__my_ret__ < 0) { \
