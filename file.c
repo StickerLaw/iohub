@@ -63,7 +63,7 @@ static int hub_open_impl(const char *path, int addflags,
     char bpath[PATH_MAX] = { 0 };
     struct hub_file *file = NULL;
 
-    file = calloc(1, sizeof(*file));
+    file = calloc(1, sizeof(struct hub_file));
     if (!file) {
         ret = -ENOMEM;
         goto error;
@@ -81,8 +81,7 @@ static int hub_open_impl(const char *path, int addflags,
         ret = -errno;
         goto error;
     }
-    info->fh = (uintptr_t)file;
-    return 0;
+    info->fh = (uintptr_t)(void*)file;
 
 error:
 #ifdef DEBUG_ENABLED
@@ -96,6 +95,9 @@ error:
               mode, ret);
     }
 #endif
+    if (ret == 0) {
+        return 0;
+    }
     if (file) {
         if (file->fd >= 0) {
             close(file->fd);
