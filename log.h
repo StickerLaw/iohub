@@ -21,7 +21,7 @@
 
 #include <stdio.h> // for printf
 
-#define DEBUG_ENABLED 1
+#undef DEBUG_ENABLED
 
 #ifdef DEBUG_ENABLED
 /**
@@ -29,7 +29,7 @@
  */
 #define DEBUG(x, ...) printf(x, __VA_ARGS__);
 #else 
-//#define DEBUG(x, ...) ; 
+#define DEBUG(x, ...) ; 
 #endif 
 
 /**

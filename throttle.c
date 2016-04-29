@@ -112,6 +112,8 @@ void throttle_init(const struct uid_config *list)
     for (conf = list; conf; conf = conf->next) {
         udata = xcalloc(1, sizeof(*udata));
         udata->full = conf->full;
+        fprintf(stderr, "throttle_init(uid=%"PRId32") = { full:%"PRId64" }\n",
+                conf->uid, udata->full);
         ret = htable_put(g_uid_table, (void*)(uintptr_t)conf->uid, udata);
         if (ret) {
             fprintf(stderr, "throttle_init: htable_put failed: error "
@@ -154,7 +156,8 @@ void throttle(uint32_t uid, uint64_t amt)
         if (cur_period != prev_period) {
             // If the next period has rolled around, our allocation should have
             // renewed.
-            avail = (udata->full << BITS_PER_PERIOD);
+            avail = udata->full;
+            fprintf(stderr, "renewing allocation to %"PRId64"\n", avail);
         } else {
             // See how many bytes are remaining for us in this period.
             avail = prev >> BITS_PER_PERIOD;
@@ -169,6 +172,8 @@ void throttle(uint32_t uid, uint64_t amt)
             // Try to sleep for the rest of the period.
             delta.tv_sec = ((cur_period + 1) * SECS_PER_PERIOD) - cur.tv_sec;
             delta.tv_nsec = 1000000000LL - cur.tv_nsec;
+            fprintf(stderr, "nanosleep(delta.tv_sec=%lld, delta.tv_nsec=%lld)\n",
+                    (long long)delta.tv_sec, (long long)delta.tv_nsec);
             nanosleep(&delta, NULL);
             prev = __sync_fetch_and_or(&udata->cur, 0);
             continue;

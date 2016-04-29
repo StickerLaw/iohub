@@ -154,7 +154,7 @@ int hub_write(const char *path, const char *buf, size_t size,
     DEBUG("hub_write(path=%s, size=%zd, offset=%" PRId64", uid=%"PRId32"): "
           "throttling...\n", path, size, (int64_t)offset, uid);
     //fprintf(stderr, "size = %zd\n", size);
-    throttle(fuse_get_context()->uid, size);
+    throttle(uid, size);
     ret = pwrite(file->fd, buf, size, offset);
     // We're using the direct_io mount option, so we return the number of bytes
     // written (unless there is an error, in which case we return the negative

@@ -159,13 +159,15 @@ static const struct uid_config woot = {
 static const struct uid_config cmccabe = {
     .next = &woot,
     .uid = 1014,
-    .full = 262144000LL,
+    //.full = 262144000LL,
+    .full = 1048576LL,
 };
 
 static const struct uid_config uid_config_list = {
     .next = &cmccabe,
     .uid = UNKNOWN_UID,
-    .full = 5242880LL,
+    .full = 1125899906842624LL,
+        //5242880LL,
 };
 
 int main(int argc, char *argv[])
