@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 
 die() {
-    echo $@
+    echo "${@}"
     exit 1
+}
+
+do_or_die() {
+    echo "${@}"
+    "${@}" || die "failed."
 }
 
 usage() {
@@ -14,6 +19,7 @@ usage:
 
 available tests:
     simple: test mounting followed by unmounting.
+    fs_test: start iohub and run fs_test on the overfs.
 EOF
 }
 
@@ -50,6 +56,17 @@ simple_test() {
     kill_fuse
 }
 
+fs_test() {
+    echo "*** Running fs_test..."
+    setup_fuse
+    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    FS_TEST_BIN="${SCRIPT_DIR}/fs_test"
+    [ -x "${FS_TEST_BIN}" ] || \
+        die "failed to find fs_test binary in the ${SCRIPT_DIR} directory."
+    do_or_die "${FS_TEST_BIN}" "${OVERFS}"
+    kill_fuse
+}
+
 ### Main
 if [ $# -lt 1 ]; then
     usage
@@ -61,6 +78,7 @@ case "${TEST_NAME}" in
     -h) usage; exit 0;;
     --help) usage; exit 0;;
     simple) simple_test;;
+    fs_test) fs_test;;
     *)  echo "Unknown test ${TEST_NAME}"
         echo
         usage;;
