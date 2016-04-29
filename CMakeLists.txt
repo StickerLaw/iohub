@@ -96,3 +96,14 @@ add_executable(fs_test
     util.c
 )
 target_link_libraries(fs_test utest)
+
+add_custom_target(
+    copy_test_script ALL
+    DEPENDS test.sh
+    COMMAND "${CMAKE_COMMAND}" -E copy "${CMAKE_SOURCE_DIR}/test.sh" "${CMAKE_BINARY_DIR}/test.sh"
+)
+
+#add_custom_target(TARGET copy_test_script ALL
+#    DEPENDS test.sh
+#    OUTPUT "${CMAKE_BINARY_DIR}/test.sh"
+#)
