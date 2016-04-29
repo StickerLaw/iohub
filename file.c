@@ -110,13 +110,13 @@ error:
 int hub_create(const char *path, mode_t mode,
                       struct fuse_file_info *info)
 {
-    DEBUG("hub_create(path=%s, mode=%04o) begin", path, mode);
+    DEBUG("hub_create(path=%s, mode=%04o): begin...\n", path, mode);
     return hub_open_impl(path, O_CREAT, mode, info);
 }
 
 int hub_open(const char *path, struct fuse_file_info *info)
 {
-    DEBUG("hub_open(path=%s) begin", path);
+    DEBUG("hub_open(path=%s): begin...\n", path);
     return hub_open_impl(path, 0, 0, info);
 }
 
