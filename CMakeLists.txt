@@ -88,3 +88,11 @@ add_executable(htable_unit
 )
 target_link_libraries(htable_unit utest)
 add_utest(htable_unit)
+
+add_executable(fs_test
+    fs_test.c 
+    log.c
+    test.c
+    util.c
+)
+target_link_libraries(fs_test utest)
