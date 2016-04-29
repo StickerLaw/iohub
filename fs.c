@@ -92,10 +92,10 @@ usage:  %s [FUSE and mount options] <root> <mount_point>\n", argv0);
  * Set up the fuse arguments we want to pass.
  *
  * We start with something like this:
- *     ./myapp [fuse-options] <root> <mount-point>
+ *     ./myapp [fuse-options] <overfs> <underfs>
  *
  * and end up with this:
- *     ./myapp [mandatory-fuse-options] [fuse-options] <mount-point>
+ *     ./myapp [mandatory-fuse-options] [fuse-options] <overfs>
  */
 static int setup_hub_args(int argc, char **argv, struct fuse_args *args,
                           char **mount_point)
